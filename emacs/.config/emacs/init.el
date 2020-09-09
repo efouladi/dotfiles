@@ -96,6 +96,67 @@
  scroll-step 1 ;; keyboard scroll one line at a time
  )
 
+;; Misc
+(set-frame-name "emacs")
+(fringe-mode '(1 . 3))
+;; enable y/n answers
+(fset 'yes-or-no-p 'y-or-n-p)
+
+;; Let C-g works when cursor is in buffers other than minibuffer
+;; https://with-emacs.com/posts/tips/quit-current-context/
+(defun keyboard-quit-context+ ()
+  "Quit current context.
+
+This function is a combination of `keyboard-quit' and
+`keyboard-escape-quit' with some parts omitted and some custom
+behavior added."
+  (interactive)
+  (cond ((region-active-p)
+         ;; Avoid adding the region to the window selection.
+         (setq saved-region-selection nil)
+         (let (select-active-regions)
+           (deactivate-mark)))
+        ((eq last-command 'mode-exited) nil)
+        (current-prefix-arg
+         nil)
+        (defining-kbd-macro
+          (message
+           (substitute-command-keys
+            "Quit is ignored during macro defintion, use \\[kmacro-end-macro] if you want to stop macro definition"))
+          (cancel-kbd-macro-events))
+        ((active-minibuffer-window)
+         (when (get-buffer-window "*Completions*")
+           ;; hide completions first so point stays in active window when
+           ;; outside the minibuffer
+           (minibuffer-hide-completions))
+         (abort-recursive-edit))
+        (t
+         (when completion-in-region-mode
+           (completion-in-region-mode -1))
+         (let ((debug-on-quit nil))
+           (signal 'quit nil)))))
+(global-set-key [remap keyboard-quit] #'keyboard-quit-context+)
+
+;; Don't add custom section directly under init.el.
+;; https://www.reddit.com/r/emacs/comments/53zpv9/how_do_i_get_emacs_to_stop_adding_custom_fields/
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(when (file-exists-p custom-file)
+  (load custom-file :noerror))
+
+;; Continue poping the mark when repeating C-SPC 
+(setq-default set-mark-command-repeat-pop t)
+;; When popping the mark, continue popping until the cursor actually
+;; moves Also, if the last command was a copy - skip past all the
+;; expand-region cruft.
+(defadvice pop-to-mark-command (around ensure-new-position activate)
+  (let ((p (point)))
+    (when (eq last-command 'save-region-or-current-line)
+      ad-do-it
+      ad-do-it
+      ad-do-it)
+    (dotimes (i 10)
+      (when (= p (point)) ad-do-it))))
+
 (add-to-list 'default-frame-alist
                        '(font . "JetBrains Mono-10"))
 
