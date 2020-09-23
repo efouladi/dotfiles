@@ -160,6 +160,144 @@ behavior added."
 (add-to-list 'default-frame-alist
                        '(font . "JetBrains Mono-10"))
 
+;;; Window and Buffer management
+
+(use-package windmove
+  :straight nil
+  :bind (("s-j" . windmove-down)
+         ("s-k" . windmove-up)
+         ("s-h" . windmove-left)
+         ("s-l" . windmove-right))
+  )
+
+(use-package window
+  ;; Handier movement over default window.el
+  :straight nil
+  :bind (
+         ("C-x 2"             . split-window-below-and-move-there)
+         ("C-x 3"             . split-window-right-and-move-there)
+         ("C-x \\"            . toggle-window-split)
+         ("C-0"               . delete-window)
+         ("C-1"               . delete-other-windows)
+         ("C-2"               . split-window-below-and-move-there)
+         ("C-3"               . split-window-right-and-move-there)
+         )
+  :init
+  ;; Functions for easier navigation
+  (defun split-window-below-and-move-there ()
+    (interactive)
+    (split-window-below)
+    (windmove-down))
+
+  (defun split-window-right-and-move-there ()
+    (interactive)
+    (split-window-right)
+    (windmove-right))
+
+  (defun toggle-window-split ()
+    "When there are two windows, toggle between vertical and
+horizontal mode."
+    (interactive)
+    (if (= (count-windows) 2)
+        (let* ((this-win-buffer (window-buffer))
+               (next-win-buffer (window-buffer (next-window)))
+               (this-win-edges (window-edges (selected-window)))
+               (next-win-edges (window-edges (next-window)))
+               (this-win-2nd (not (and (<= (car this-win-edges)
+                                           (car next-win-edges))
+                                       (<= (cadr this-win-edges)
+                                           (cadr next-win-edges)))))
+               (splitter
+                (if (= (car this-win-edges)
+                       (car (window-edges (next-window))))
+                    'split-window-horizontally
+                  'split-window-vertically)))
+          (delete-other-windows)
+          (let ((first-win (selected-window)))
+            (funcall splitter)
+            (if this-win-2nd (other-window 1))
+            (set-window-buffer (selected-window) this-win-buffer)
+            (set-window-buffer (next-window) next-win-buffer)
+            (select-window first-win)
+            (if this-win-2nd (other-window 1))))))
+  )
+
+(use-package ace-window
+  :defer 3
+  :bind (("<C-return>" . ace-window))
+  :custom-face (aw-leading-char-face ((t (:inherit ace-jump-face-foreground :height 1.0))))
+  :config
+  (setq
+   ;; Home row is more convenient. Use home row keys that prioritize fingers that don't move.
+   aw-keys '(?j ?k ?l ?m ?n ?o ?g)
+   aw-scope 'visible)
+  )
+
+(use-package winner
+  ;; Enable window restoration
+  :defer 1
+  :config
+  (winner-mode 1))
+
+(setq
+ ;; Kill a frame when quitting its only window
+ frame-auto-hide-function 'delete-frame
+ ;; Maximum number of side-windows to create on (left top right bottom)
+ window-sides-slots '(0 1 2 2)
+ ;; Default rules
+ display-buffer-alist
+ `(;; Right side for most Help, Agenda, Trace, etc buffers
+   ("*\\(Help\\|help\\|Man.*\\|trace-\\|Backtrace\\|RefTeX.*\\|ess-describe\\|SDCV.*\\| Merriam.*\\)"
+    (display-buffer-reuse-mode-window display-buffer-in-previous-window display-buffer-in-side-window)
+    (side . right)
+    (slot . 1)
+    (window-width . 80)
+    (window-height . 0.7)
+    (reusable-frames . visible))
+   ;; Same window
+   ("*\\(R.*\\|Python\\)"
+    (display-buffer-reuse-window display-buffer-same-window)
+    (reusable-frames . visible))
+   ;; Show on bottom
+   ("*\\(ielm\\)"
+    (display-buffer-reuse-window display-buffer-in-side-window)
+    (side . bottom)
+    (slot . 0)
+    (window-height . 10)
+    (reusable-frames . visible))
+   ("^\\vterm"
+    (display-buffer-reuse-window display-buffer-in-side-window)
+    (side . right)
+    (slot . 2)
+    (window-width . 80)
+    (reusable-frames . visible))
+   ;; Always show notmuch in new frame
+   ("^\\*info"
+    (display-buffer-reuse-window display-buffer-in-previous-window))
+   ;; Display *BBDB* buffer on the bottom frame
+   ("\\*BBDB"
+    (display-buffer-reuse-window display-buffer-in-previous-window display-buffer-in-side-window)
+    (side . bottom)
+    (slot . 0)
+    (window-height . 10)
+    (reusable-frames . visible))
+   ;; Split shells at the bottom
+   ("^\\*e?shell"
+    (display-buffer-reuse-window display-buffer-in-previous-window display-buffer-below-selected)
+    (window-min-height . 20)
+    (reusable-frames . visible)
+    )
+   )
+ )
+
+(use-package nswbuff
+  ;; Quickly switching buffers. Quite useful!
+  :bind (("<C-tab>"           . nswbuff-switch-to-next-buffer)
+         ("<C-S-iso-lefttab>" . nswbuff-switch-to-previous-buffer))
+  :config
+  (setq nswbuff-display-intermediate-buffers t)
+  )
+
 ;;;; Extra packages
 (use-package outshine)
 (use-package magit)
