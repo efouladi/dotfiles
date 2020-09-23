@@ -298,6 +298,32 @@ horizontal mode."
   (setq nswbuff-display-intermediate-buffers t)
   )
 
+;;; Terminal Support
+
+(use-package vterm
+  :defer 3
+  ;; Don't let whole-line-or-region shadows the C-y
+  :config
+  (defun create-or-switch-to-vterm ()
+    "Switch to default `vterm' buffer.
+      Start `vterm' if it's not already running."
+    (interactive)
+    (pop-to-buffer "vterm" nil t)
+    (if (not (equal major-mode 'vterm-mode))
+        (vterm-mode)))
+  :hook (vterm-mode . (lambda () (whole-line-or-region-local-mode -1)))
+  :bind (("C-x C-z" . create-or-switch-to-vterm)
+         :map vterm-mode-map
+         ("C-y"  . vterm-yank)
+         ("<f5>" . nil)
+         ("<f6>" . nil)
+         ("<f7>" . nil)
+         ("<f8>" . nil)
+         ("<f9>" . nil)
+         ("<f10>" . nil)
+         ("<f11>" . nil)
+         ("<f12>" . nil)))
+
 ;;;; Extra packages
 (use-package outshine)
 (use-package magit)
