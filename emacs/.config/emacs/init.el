@@ -1,3 +1,9 @@
+;;; init.el --- Initialization file for Emacs
+
+;;; Commentary:
+;; Emacs Startup File --- initialization for Emacs
+
+;;; Code:
 ;;; Bootstrap
 ;; bootstrap straigt.el
 (defvar bootstrap-version)
@@ -408,3 +414,4 @@ horizontal mode."
 ;;;; Extra packages
 (use-package outshine)
 (use-package magit)
+;;; init.el ends here
